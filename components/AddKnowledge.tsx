@@ -39,13 +39,23 @@ const AddKnowledge: React.FC<AddKnowledgeProps> = ({ onSave, onCancel }) => {
     try {
       const result = await analyzeKnowledge(rawText, images);
       
+      // Determine the final content for the note.
+      // Priority: 
+      // 1. AI Generated detailed content (extractedContent)
+      // 2. User's raw text input (rawText)
+      // 3. Fallback message
+      const finalContent = result.extractedContent && result.extractedContent.trim().length > 0 
+        ? result.extractedContent 
+        : (rawText || "Contenido generado automáticamente.");
+
       const newEntry: KnowledgeEntry = {
         id: crypto.randomUUID(),
         title: result.titleSuggestion,
-        rawContent: rawText,
+        rawContent: finalContent,
         category: result.suggestedCategory as Category,
         summary: result.summary,
         steps: result.steps,
+        codeSnippets: result.codeSnippets || [],
         mermaidChart: result.mermaidChart,
         tags: result.suggestedTags,
         imageUrls: images,
@@ -68,8 +78,8 @@ const AddKnowledge: React.FC<AddKnowledgeProps> = ({ onSave, onCancel }) => {
           Agregar Nuevo Conocimiento
         </h2>
         <p className="text-slate-400">
-          Pega tus apuntes, registros o definiciones. Sube capturas de pantalla de errores o diagramas. 
-          La IA lo estructurará por ti.
+          Describe un proceso textualmente o pega tus apuntes. La IA generará automáticamente un 
+          <span className="text-blue-400 font-semibold"> Diagrama de Flujo</span> basado en tu descripción.
         </p>
       </div>
 
@@ -78,12 +88,12 @@ const AddKnowledge: React.FC<AddKnowledgeProps> = ({ onSave, onCancel }) => {
         <div className="relative group">
           <textarea
             className="w-full h-64 bg-slate-800 text-slate-100 p-4 rounded-xl border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-none font-mono text-sm shadow-inner"
-            placeholder="Pega tus notas desestructuradas, fragmentos de código o pasos de procedimientos aquí..."
+            placeholder="Ejemplo: 'Para desplegar, primero compila el código. Si falla, revisa los logs. Si pasa, sube al servidor y reinicia Nginx'."
             value={rawText}
             onChange={(e) => setRawText(e.target.value)}
           />
           <div className="absolute bottom-4 right-4 text-xs text-slate-500 pointer-events-none">
-            Soporta Markdown
+            La IA detectará flujos y creará diagramas
           </div>
         </div>
 
@@ -91,7 +101,7 @@ const AddKnowledge: React.FC<AddKnowledgeProps> = ({ onSave, onCancel }) => {
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" /> Adjuntos
+              <ImageIcon className="w-4 h-4" /> Adjuntos (Opcional)
             </label>
             <button 
               onClick={() => fileInputRef.current?.click()}
@@ -155,7 +165,7 @@ const AddKnowledge: React.FC<AddKnowledgeProps> = ({ onSave, onCancel }) => {
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                Analizar y Guardar
+                Generar Entrada y Diagrama
               </>
             )}
           </button>
